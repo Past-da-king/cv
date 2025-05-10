@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Select Repositories - {{ app_title }}{% endblock %}
+
+{% block head_extra %}
+    <script src="{{ url_for('static', path='/js/repo_selection.js') }}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Select Repositories</h1>
+        <!-- Future filter/sort options could go here -->
+    </div>
+
+    {% if error_message %}
+    <div class="p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-300 flex items-start space-x-3" role="alert">
+        <svg class="flex-shrink-0 w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-8.707a1 1 0 011.414-1.414L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707z" clip-rule="evenodd" />
+        </svg>
+        <div>
+            <h3 class="font-medium">Error Fetching Repositories</h3>
+            <p class="mt-1">{{ error_message }}</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <form id="repoSelectionForm" method="post" action="{{ url_for('generate_cv_summary_page') }}">
+        <input type="hidden" name="action_type" id="actionTypeInput" value="">
+        
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200 mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
+                <div class="w-full sm:w-auto flex-grow sm:flex-grow-0">
+                    <button type="button" id="processSelectedButton"
+                            data-max-manual-select="{{ max_manual_select_repos }}"
+                            class="w-full sm:w-auto flex justify-center items-center py-2.5 px-5 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-2">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.06 0l4-5.5z" clip-rule="evenodd" />
+                        </svg>
+                        Generate CV for Selected (<span id="selectedCount">0</span>)
+                    </button>
+                    <p class="text-xs text-slate-500 mt-1.5 text-center sm:text-left">Manually select up to {{ max_manual_select_repos }} repositories.</p>
+                </div>
+                <div class="text-center text-sm text-slate-400 hidden sm:block">OR</div>
+                <div class="w-full sm:w-auto flex-grow sm:flex-grow-0">
+                    <button type="button" id="autoSelectButton"
+                            class="w-full sm:w-auto flex justify-center items-center py-2.5 px-5 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary-DEFAULT hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-DEFAULT transition duration-150 ease-in-out">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-2">
+                          <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM3 10a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75A.75.75 0 013 10z" clip-rule="evenodd" />
+                        </svg>
+                        Auto-Generate for Top {{ auto_select_output_count }}
+                    </button>
+                     <p class="text-xs text-slate-500 mt-1.5 text-center sm:text-left">Processes {{ auto_select_process_count }} most recent repos.</p>
+                </div>
+            </div>
+             {% if repo_cards_html %}
+            <div class="mt-6 pt-6 border-t border-slate-200">
+                <label class="flex items-center space-x-2.5 cursor-pointer text-sm text-slate-600 hover:text-primary-DEFAULT mb-4 group">
+                    <input type="checkbox" id="selectAllCheckbox" class="h-4 w-4 text-primary-DEFAULT border-slate-300 rounded focus:ring-primary-DEFAULT group-hover:border-primary-DEFAULT transition-colors">
+                    <span class="font-medium">Select All / Deselect All Visible Repositories</span>
+                </label>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if repo_cards_html %}
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {{ repo_cards_html | safe }} {# Repo cards HTML is generated in main.py #}
+            </div>
+        {% else %}
+            {% if not error_message %}
+            <div class="text-center py-16 bg-white rounded-xl shadow-lg border border-slate-200">
+                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <h3 class="mt-2 text-lg font-semibold text-slate-900">No Repositories Found</h3>
+                <p class="mt-1 text-sm text-slate-500">Your GitHub account doesn't seem to have any repositories, or we couldn't access them.</p>
+                <div class="mt-6">
+                  <a href="{{ url_for('get_token_form_page') }}" class="inline-flex items-center rounded-md bg-primary-DEFAULT px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-DEFAULT">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5V4.75z" />
+                    </svg>
+                    Retry Connection
+                  </a>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

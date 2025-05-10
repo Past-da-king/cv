@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}File: {{ file_path_display }} - {{ app_title }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <nav aria-label="Breadcrumb" class="mb-2">
+      <ol role="list" class="flex items-center space-x-2 text-sm">
+        <li>
+          <a href="{{ url_for('list_repositories_page') }}" class="text-slate-500 hover:text-primary-DEFAULT transition-colors">
+            <svg class="flex-shrink-0 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 10.707V17.5a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 0111 17.5V15h-2v2.5A1.5 1.5 0 017.5 19h-3A1.5 1.5 0 013 17.5V10.707a1 1 0 01.293-.707l7-7z" clip-rule="evenodd" /></svg>
+            <span class="sr-only">Repositories</span>
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 flex-shrink-0 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+            <a href="{{ back_to_dir_link }}" class="ml-2 text-sm font-medium text-slate-500 hover:text-primary-DEFAULT transition-colors truncate" title="{{ repo_full_name }}">{{ repo_full_name }}</a>
+          </div>
+        </li>
+         <li>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 flex-shrink-0 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+            <span class="ml-2 text-sm font-medium text-slate-700" aria-current="page">{{ file_path_display.split('/')[-1] }}</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-all">{{ file_path_display.split('/')[-1] }}</h1>
+        <a href="{{ back_to_dir_link }}" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors">
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+            Back to Directory
+        </a>
+    </div>
+    <p class="text-sm text-slate-500">Full path: <code class="text-xs bg-slate-100 p-1 rounded">{{ file_path_display }}</code></p>
+    
+    {% if error_message %}
+    <div class="p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-300 flex items-start space-x-3" role="alert">
+        <svg class="flex-shrink-0 w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-8.707a1 1 0 011.414-1.414L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707z" clip-rule="evenodd" />
+        </svg>
+        <div>
+            <h3 class="font-medium">Error Viewing File</h3>
+            <p class="mt-1">{{ error_message }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if file_content_display_html %}
+        {% if is_binary_file_message %}
+            <div class="p-6 bg-yellow-50 border border-yellow-300 rounded-xl shadow-lg text-sm text-yellow-700" role="alert">
+                <div class="flex items-start space-x-3">
+                    <svg class="flex-shrink-0 w-5 h-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                    </svg>
+                    <div>{{ file_content_display_html | safe }}</div>
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-slate-900 text-slate-200 p-4 sm:p-6 border border-slate-700 rounded-xl overflow-x-auto text-sm shadow-inner">
+                <pre class="font-mono whitespace-pre-wrap break-words leading-relaxed"><code>{{- file_content_display_html | safe -}}</code></pre>
+            </div>
+        {% endif %}
+    {% else %}
+        {% if not error_message %}
+        <div class="text-center py-16 bg-white rounded-xl shadow-lg border border-slate-200">
+            <svg class="mx-auto h-12 w-12 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+            <h3 class="mt-2 text-lg font-semibold text-slate-900">No Content</h3>
+            <p class="mt-1 text-sm text-slate-500">This file appears to be empty or its content could not be displayed.</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

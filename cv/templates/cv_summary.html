@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}CV Summaries - {{ app_title }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Generated CV Summaries</h1>
+        <a href="{{ url_for('list_repositories_page') }}" class="inline-flex items-center rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors">
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+            Back to Repositories
+        </a>
+    </div>
+
+    {% if message %}
+        <div class="p-4 text-sm rounded-lg border shadow-sm flex items-start space-x-3
+                    {% if 'error' in message.lower() or 'failed' in message.lower() or 'disabled' in message.lower() or 'could not' in message.lower() %} 
+                        text-red-700 bg-red-50 border-red-300
+                    {% elif 'warning' in message.lower() or 'some errors' in message.lower() %}
+                        text-amber-700 bg-amber-50 border-amber-300
+                    {% else %} 
+                        text-green-700 bg-green-50 border-green-300
+                    {% endif %}" role="alert">
+            {% if 'error' in message.lower() or 'failed' in message.lower() or 'disabled' in message.lower() or 'could not' in message.lower() %}
+                <svg class="flex-shrink-0 w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-8.707a1 1 0 011.414-1.414L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707z" clip-rule="evenodd" />
+                </svg>
+            {% elif 'warning' in message.lower() or 'some errors' in message.lower() %}
+                <svg class="flex-shrink-0 w-5 h-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+            {% else %} 
+                <svg class="flex-shrink-0 w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.06 0l4-5.5z" clip-rule="evenodd" />
+                </svg>
+            {% endif %}
+            <div><p class="font-medium">Processsing Summary</p>{{ message | safe }}</div>
+        </div>
+    {% endif %}
+
+    {% if cv_entries_html_parts %}
+        <div class="space-y-10">
+            {% for entry_html in cv_entries_html_parts %}
+                {{ entry_html | safe }} {# HTML for each entry is generated in main.py #}
+            {% endfor %}
+        </div>
+    {% else %}
+        {% if not message or ('error' not in message.lower() and 'failed' not in message.lower() and 'disabled' not in message.lower()) %}
+         <div class="text-center py-16 bg-white rounded-xl shadow-lg border border-slate-200">
+            <svg class="mx-auto h-12 w-12 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <h3 class="mt-2 text-lg font-semibold text-slate-900">No CV Entries Generated</h3>
+            <p class="mt-1 text-sm text-slate-500">This might be because no repositories were processed, or an issue occurred.</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+

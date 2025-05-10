@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Repositories - {{ app_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+            },
+            colors: {
+              'brand-blue': '#2563EB', // A slightly different blue
+              'brand-green': '#059669', // A slightly different green
+              'brand-gray': '#4B5563',
+              'brand-indigo': '#4F46E5',
+              'brand-slate-light': '#f8fafc',
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-brand-slate-light text-slate-800 font-sans p-4 antialiased">
+    <div class="container mx-auto mt-8 mb-8 p-6 sm:p-8 bg-white rounded-xl shadow-2xl border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-6 border-b border-slate-200">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-3 sm:mb-0">Select GitHub Repositories</h1>
+            <a href="/" class="px-4 py-2 text-sm font-medium text-white bg-brand-gray hover:bg-slate-700 rounded-lg shadow-sm transition duration-150 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h14" />
+                </svg>
+                Change Token
+            </a>
+        </div>
+
+        {% if error_message %}
+            <div class="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg border border-red-300 flex items-center space-x-2" role="alert">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <div><span class="font-semibold">Error:</span> {{ error_message }}</div>
+            </div>
+        {% endif %}
+        
+        <form id="repoSelectionForm" method="post" action="/generate-cv-summary">
+            <input type="hidden" name="action_type" id="actionTypeInput" value="">
+            
+            <div class="mb-6 flex flex-col sm:flex-row justify-between items-center sm:space-x-4 space-y-4 sm:space-y-0">
+                <div class="w-full sm:w-auto">
+                    <button type="button" id="processSelectedButton"
+                            class="w-full sm:w-auto flex justify-center items-center py-2.5 px-5 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-brand-indigo hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-indigo transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Generate CV for Selected (<span id="selectedCount">0</span>)
+                    </button>
+                    <p class="text-xs text-slate-500 mt-1 text-center sm:text-left">Max {{ max_manual_select_repos }} manual selections.</p>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <button type="button" id="autoSelectButton"
+                            class="w-full sm:w-auto flex justify-center items-center py-2.5 px-5 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-brand-green hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-green transition duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 10.414V15a1 1 0 102 0v-4.586l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Auto-Generate for Top {{ auto_select_output_count }} (from {{ auto_select_process_count }} recent)
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="flex items-center space-x-2 cursor-pointer text-sm text-slate-600 hover:text-brand-indigo">
+                    <input type="checkbox" id="selectAllCheckbox" class="h-4 w-4 text-brand-indigo border-slate-300 rounded focus:ring-brand-indigo">
+                    <span>Select All / Deselect All Visible</span>
+                </label>
+            </div>
+
+            {% if repo_cards_html %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {{ repo_cards_html | safe }}
+                </div>
+            {% else %}
+                {% if not error_message %}
+                <p class="text-slate-500 py-8 text-center col-span-full">No repositories found or you don't have access to any.</p>
+                {% endif %}
+            {% endif %}
+        </form> <!-- Close the form -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('repoSelectionForm');
+            const processSelectedButton = document.getElementById('processSelectedButton');
+            const autoSelectButton = document.getElementById('autoSelectButton');
+            const actionTypeInput = document.getElementById('actionTypeInput');
+            const selectedCountSpan = document.getElementById('selectedCount');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const repoCheckboxes = document.querySelectorAll('input[name="selected_repos"]');
+            const maxManualSelect = parseInt("{{ max_manual_select_repos }}", 10);
+
+            function updateSelectedCountAndButton() {
+                const checkedCount = document.querySelectorAll('input[name="selected_repos"]:checked').length;
+                selectedCountSpan.textContent = checkedCount;
+                processSelectedButton.disabled = checkedCount === 0 || checkedCount > maxManualSelect;
+                if (checkedCount > maxManualSelect) {
+                    processSelectedButton.title = `Please select no more than ${maxManualSelect} repositories.`;
+                } else {
+                     processSelectedButton.title = '';
+                }
+            }
+
+            repoCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCountAndButton);
+            });
+
+            selectAllCheckbox.addEventListener('change', function() {
+                repoCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateSelectedCountAndButton();
+            });
+
+            processSelectedButton.addEventListener('click', function() {
+                actionTypeInput.value = 'manual_select';
+                form.submit();
+            });
+
+            autoSelectButton.addEventListener('click', function() {
+                actionTypeInput.value = 'auto_select';
+                // Clear manual selections if auto-selecting, as they won't be used
+                repoCheckboxes.forEach(checkbox => checkbox.checked = false); 
+                form.submit();
+            });
+            
+            // Initial state
+            updateSelectedCountAndButton();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_title }}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter var', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+            },
+            colors: {
+              primary: {
+                DEFAULT: '#087EA4', // A calm, professional teal/blue
+                hover:  '#066886',
+                light: '#E0F2F7',
+                text: '#FFFFFF'
+              },
+              secondary: {
+                DEFAULT: '#4A5568', // Cool Gray
+                hover: '#2D3748'
+              },
+              accent: {
+                DEFAULT: '#DD6B20', // Orange for contrast (example)
+                hover: '#C05621'
+              },
+              slate: { // Tailwind's slate is great for UIs
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                200: '#e2e8f0',
+                300: '#cbd5e1',
+                400: '#94a3b8',
+                500: '#64748b',
+                600: '#475569',
+                700: '#334155',
+                800: '#1e293b',
+                900: '#0f172a',
+              }
+            }
+          }
+        },
+        plugins: [
+            require('@tailwindcss/forms'),
+            require('@tailwindcss/typography'),
+        ],
+      }
+    </script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/custom.css') }}">
+    <script src="{{ url_for('static', path='/js/main.js') }}" defer></script>
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="h-full antialiased text-slate-700">
+    <div class="min-h-screen flex flex-col">
+        
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <a href="{{ url_for('get_token_form_page') if request.cookies.get('github_pat') else url_for('get_token_form_page') }}" class="flex-shrink-0 flex items-center space-x-2">
+                            <svg class="h-8 w-auto text-primary-DEFAULT" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                            </svg>
+                            <span class="font-semibold text-xl text-slate-800">{{ app_title }}</span>
+                        </a>
+                    </div>
+                    <div class="flex items-center">
+                        {% if request.url.path != '/' and request.cookies.get('github_pat') %}
+                        <a href="{{ url_for('get_token_form_page') }}" class="text-sm font-medium text-slate-600 hover:text-primary-DEFAULT transition-colors">
+                            Change Token
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow bg-slate-100 py-8 sm:py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
+
+        <footer class="bg-slate-100 border-t border-slate-200">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-500">
+                &copy; {{ app_title }} {{ app_version }}. Powered by a sprinkle of AI.
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

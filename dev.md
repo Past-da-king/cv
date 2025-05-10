@@ -1,5 +1,5 @@
 
-## cv/static/css/custom.css
+## static/css/custom.css
 ```css
 /* For custom styles that are hard to achieve with Tailwind utility classes alone */
 body {
@@ -53,7 +53,7 @@ body {
 }
 ```
 
-## cv/static/js/main.js
+## static/js/main.js
 ```javascript
 // General UI enhancements and helper functions
 
@@ -131,7 +131,7 @@ function showToast(message, type = 'info') {
 }
 ```
 
-## cv/static/js/repo_selection.js
+## static/js/repo_selection.js
 ```javascript
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('repoSelectionForm');
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 ```
 
-## cv/templates/base.html
+## templates/base.html
 ```html
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-50">
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </html>
 ```
 
-## cv/templates/token_form.html
+## templates/token_form.html
 ```html
 {% extends "base.html" %}
 
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
 {% endblock %}
 ```
 
-## cv/templates/repo_list.html
+## templates/repo_list.html
 ```html
 {% extends "base.html" %}
 
@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function () {
 {% endblock %}
 ```
 
-## cv/templates/repo_contents.html
+## templates/repo_contents.html
 ```html
 {% extends "base.html" %}
 
@@ -564,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
 {% endblock %}
 ```
 
-## cv/templates/file_view.html
+## templates/file_view.html
 ```html
 {% extends "base.html" %}
 
@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', function () {
 {% endblock %}
 ```
 
-## cv/templates/cv_summary.html
+## templates/cv_summary.html
 ```html
 {% extends "base.html" %}
 
@@ -715,7 +715,7 @@ document.addEventListener('DOMContentLoaded', function () {
 ```
 
 
-## cv/main.py
+## main.py
 
 ```python
 import uvicorn

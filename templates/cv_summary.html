@@ -1,111 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CV Summary - {{ app_title }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
-            },
-            typography: ({ theme }) => ({ // For prose styling
-                DEFAULT: {
-                    css: {
-                        '--tw-prose-body': theme('colors.slate[700]'),
-                        '--tw-prose-headings': theme('colors.slate[800]'),
-                        '--tw-prose-lead': theme('colors.slate[600]'),
-                        '--tw-prose-links': theme('colors.brand-blue[600]'),
-                        '--tw-prose-bold': theme('colors.slate[800]'),
-                        '--tw-prose-counters': theme('colors.slate[500]'),
-                        '--tw-prose-bullets': theme('colors.slate[400]'),
-                        '--tw-prose-hr': theme('colors.slate[200]'),
-                        '--tw-prose-quotes': theme('colors.slate[800]'),
-                        '--tw-prose-quote-borders': theme('colors.slate[300]'),
-                        '--tw-prose-captions': theme('colors.slate[500]'),
-                        '--tw-prose-code': theme('colors.brand-indigo[600]'),
-                        '--tw-prose-pre-code': theme('colors.slate[200]'),
-                        '--tw-prose-pre-bg': theme('colors.slate[800]'),
-                        '--tw-prose-th-borders': theme('colors.slate[300]'),
-                        '--tw-prose-td-borders': theme('colors.slate[200]'),
-                        '--tw-prose-invert-body': theme('colors.slate[300]'),
-                        // ... other prose styles
-                    },
-                },
-            }),
-            colors: {
-              'brand-blue': '#2563EB',
-              'brand-green': '#059669',
-              'brand-amber': '#D97706', // Darker amber
-              'brand-indigo': '#4F46E5',
-              'brand-slate-light': '#f8fafc',
-            }
-          }
-        },
-        plugins: [
-            require('@tailwindcss/typography'), // For .prose class styling
-        ],
-      }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-brand-slate-light text-slate-800 font-sans p-4 antialiased">
-    <div class="container mx-auto mt-8 mb-8 p-6 sm:p-8 bg-white rounded-xl shadow-2xl border border-slate-200">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-6 border-b border-slate-200">
-            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-3 sm:mb-0">Generated CV Summaries</h1>
-            <a href="/repos" class="px-4 py-2 text-sm font-medium text-white bg-brand-blue hover:bg-blue-700 rounded-lg shadow-sm transition duration-150 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h14" />
-                </svg>
-                Back to Repositories
-            </a>
-        </div>
+{% extends "base.html" %}
 
-        {% if message %}
-            <div class="p-4 mb-6 text-sm 
-                        {% if 'error' in message.lower() or 'failed' in message.lower() or 'disabled' in message.lower() %} 
-                            text-red-800 bg-red-100 border border-red-300
-                        {% elif 'warning' in message.lower() %}
-                            text-amber-800 bg-amber-100 border border-amber-300
-                        {% else %} 
-                            text-green-800 bg-green-100 border border-green-300
-                        {% endif %} 
-                        rounded-lg shadow-sm flex items-start space-x-2" role="alert">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 
-                    {% if 'error' in message.lower() or 'failed' in message.lower() or 'disabled' in message.lower() %} text-red-600 
-                    {% elif 'warning' in message.lower() %} text-amber-600
-                    {% else %} text-green-600 {% endif %}" 
-                    viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-                <div>{{ message | safe }}</div>
-            </div>
-        {% endif %}
+{% block title %}CV Summaries - {{ app_title }}{% endblock %}
 
-        {% if cv_entries_html_parts %}
-            <div class="space-y-8">
-                {% for entry_html in cv_entries_html_parts %}
-                    {{ entry_html | safe }}
-                {% endfor %}
-            </div>
-        {% else %}
-            {% if not message or ('error' not in message.lower() and 'failed' not in message.lower() and 'disabled' not in message.lower()) %}
-             <div class="text-center py-10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 15.5S9 14 12 14s4.5 1.5 4.5 1.5" />
-                </svg>
-                <p class="text-slate-500 mt-3 text-lg">No CV entries were generated.</p>
-                <p class="text-sm text-slate-500">This might be because no repositories were processed, an error occurred, or the CV generation feature is currently disabled (e.g., missing API key).</p>
-            </div>
-            {% endif %}
-        {% endif %}
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Generated CV Summaries</h1>
+        <a href="{{ url_for('list_repositories_page') }}" class="inline-flex items-center rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors">
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+            Back to Repositories
+        </a>
     </div>
-</body>
-</html>
+
+    {% if message %}
+        <div class="p-4 text-sm rounded-lg border shadow-sm flex items-start space-x-3
+                    {% if 'error' in message.lower() or 'failed' in message.lower() or 'disabled' in message.lower() or 'could not' in message.lower() %} 
+                        text-red-700 bg-red-50 border-red-300
+                    {% elif 'warning' in message.lower() or 'some errors' in message.lower() %}
+                        text-amber-700 bg-amber-50 border-amber-300
+                    {% else %} 
+                        text-green-700 bg-green-50 border-green-300
+                    {% endif %}" role="alert">
+            {% if 'error' in message.lower() or 'failed' in message.lower() or 'disabled' in message.lower() or 'could not' in message.lower() %}
+                <svg class="flex-shrink-0 w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-8.707a1 1 0 011.414-1.414L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707z" clip-rule="evenodd" />
+                </svg>
+            {% elif 'warning' in message.lower() or 'some errors' in message.lower() %}
+                <svg class="flex-shrink-0 w-5 h-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+            {% else %} 
+                <svg class="flex-shrink-0 w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.06 0l4-5.5z" clip-rule="evenodd" />
+                </svg>
+            {% endif %}
+            <div><p class="font-medium">Processsing Summary</p>{{ message | safe }}</div>
+        </div>
+    {% endif %}
+
+    {% if cv_entries_html_parts %}
+        <div class="space-y-10">
+            {% for entry_html in cv_entries_html_parts %}
+                {{ entry_html | safe }} {# HTML for each entry is generated in main.py #}
+            {% endfor %}
+        </div>
+    {% else %}
+        {% if not message or ('error' not in message.lower() and 'failed' not in message.lower() and 'disabled' not in message.lower()) %}
+         <div class="text-center py-16 bg-white rounded-xl shadow-lg border border-slate-200">
+            <svg class="mx-auto h-12 w-12 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <h3 class="mt-2 text-lg font-semibold text-slate-900">No CV Entries Generated</h3>
+            <p class="mt-1 text-sm text-slate-500">This might be because no repositories were processed, or an issue occurred.</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+

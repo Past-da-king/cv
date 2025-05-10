@@ -1,78 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contents of {{ repo_full_name }} - {{ app_title }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
-              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace']
-            },
-            colors: {
-              'brand-blue': '#2563EB',
-              'brand-indigo': '#4F46E5',
-              'brand-slate-light': '#f8fafc',
-              'brand-yellow': '#F59E0B', // For folder icons
-            }
-          }
-        }
-      }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-brand-slate-light text-slate-800 font-sans p-4 antialiased">
-    <div class="container mx-auto mt-8 mb-8 p-6 sm:p-8 bg-white rounded-xl shadow-2xl border border-slate-200">
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-3 break-all">{{ repo_full_name }}</h1>
-        
-        <nav class="mb-6 text-sm space-x-2 sm:space-x-3 flex flex-wrap items-center pb-4 border-b border-slate-200">
-            <a href="/repos" class="text-brand-blue hover:text-brand-indigo font-medium flex items-center py-1 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h14" />
-                </svg>
-                Repositories
-            </a>
-            {% if up_link %}
-                <span class="text-slate-300">/</span>
-                {{ up_link | safe }} <!-- up_link should be an <a> tag with appropriate classes -->
-            {% endif %}
-        </nav>
+{% extends "base.html" %}
 
-        <div class="bg-slate-100 border border-slate-200 text-slate-700 p-3 rounded-lg mb-6 text-sm font-mono break-all shadow-inner">
-            <span class="font-semibold text-slate-800">Current Path:</span> /{{ current_path_display }}
-        </div>
+{% block title %}Contents of {{ repo_full_name }} - {{ app_title }}{% endblock %}
 
-        {% if error_message %}
-            <div class="p-4 mb-6 text-sm text-red-800 bg-red-100 rounded-lg border border-red-300 flex items-center space-x-2" role="alert">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-                <div><span class="font-semibold">Error:</span> {{ error_message }}</div>
-            </div>
-        {% endif %}
+{% block content %}
+<div class="space-y-6">
+    <nav aria-label="Breadcrumb" class="mb-2">
+        <ol role="list" class="flex items-center space-x-2 text-sm">
+            <li>
+                <a href="{{ url_for('list_repositories_page') }}" class="text-slate-500 hover:text-primary-DEFAULT transition-colors">
+                    <svg class="flex-shrink-0 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 10.707V17.5a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 0111 17.5V15h-2v2.5A1.5 1.5 0 017.5 19h-3A1.5 1.5 0 013 17.5V10.707a1 1 0 01.293-.707l7-7z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="sr-only">Repositories</span>
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                    </svg>
+                    <span class="ml-2 text-slate-700 font-semibold truncate" title="{{ repo_full_name }}">{{ repo_full_name }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
 
-        {% if content_list_html_items %}
-            <div class="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
-                <ul class="divide-y divide-slate-200">
-                    {{ content_list_html_items | safe }}
-                </ul>
-            </div>
-        {% else %}
-             {% if not error_message %}
-             <div class="text-center py-10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                <p class="text-slate-500 mt-2">This directory appears to be empty.</p>
-             </div>
-             {% endif %}
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-all">{{ repo_full_name }}</h1>
+        {% if up_link %}
+            {{ up_link | safe }} {# Assumes up_link contains full styled <a> tag from main.py #}
         {% endif %}
     </div>
-</body>
-</html>
+    
+    <div class="bg-slate-100 border border-slate-200 text-slate-600 p-3.5 rounded-lg text-sm font-mono break-all shadow-inner">
+        <span class="font-semibold text-slate-800">Current Path:</span> /{{ current_path_display }}
+    </div>
+
+    {% if error_message %}
+    <div class="p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-300 flex items-start space-x-3" role="alert">
+        <svg class="flex-shrink-0 w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-8.707a1 1 0 011.414-1.414L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707z" clip-rule="evenodd" />
+        </svg>
+        <div>
+            <h3 class="font-medium">Error Browsing Repository</h3>
+            <p class="mt-1">{{ error_message }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if content_list_html_items %}
+        <div class="bg-white overflow-hidden rounded-xl shadow-lg border border-slate-200">
+            <ul role="list" class="divide-y divide-slate-200">
+                {{ content_list_html_items | safe }} {# Items are generated in main.py with new styling #}
+            </ul>
+        </div>
+    {% else %}
+         {% if not error_message %}
+         <div class="text-center py-16 bg-white rounded-xl shadow-lg border border-slate-200">
+            <svg class="mx-auto h-12 w-12 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+            </svg>
+            <h3 class="mt-2 text-lg font-semibold text-slate-900">Directory Empty</h3>
+            <p class="mt-1 text-sm text-slate-500">This directory doesn't contain any files or folders.</p>
+         </div>
+         {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

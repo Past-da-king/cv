@@ -1,155 +1,192 @@
 import time
 from typing import Optional, List 
+import asyncio # Import asyncio for async generator
 from github_service import get_consolidated_repo_text_for_context
-from gemini_service import generate_cv_entry_for_project
+from gemini_service import generate_cv_entry_for_project # Correct import
 from vector_store_service import vector_store # Use the global instance
 from utils import simple_chunk_text
 from config import (
     TEXT_CHUNK_SIZE_CHARS, TEXT_CHUNK_OVERLAP_CHARS,
     MAX_CONTEXT_CHUNKS_FOR_GEMINI_CV_GENERATION,
-    AUTO_SELECT_FINAL_OUTPUT_COUNT # Added for "best N"
+    AUTO_SELECT_FINAL_OUTPUT_COUNT,
+    GEMINI_API_GENERATION_DELAY_SECONDS, # Used inside gemini_service
 )
 
-def process_repo_for_cv_context(token: str, owner: str, repo_name: str):
+# Make the orchestration function an async generator
+async def orchestrate_cv_generation_for_repos(token: str, repos_to_process: list[dict], action_type: str):
     """
-    Fetches consolidated text for a repo, chunks it, and adds to the vector store.
-    """
-    print(f"Processing {owner}/{repo_name} for CV context...")
-    repo_full_name = f"{owner}/{repo_name}"
-
-    consolidated_text = get_consolidated_repo_text_for_context(token, owner, repo_name)
-    
-    if not consolidated_text:
-        print(f"No text consolidated for {repo_full_name}. Skipping embedding.")
-        return False
-
-    print(f"Chunking consolidated text for {repo_full_name} (length: {len(consolidated_text)} chars)...")
-    chunks = simple_chunk_text(consolidated_text, TEXT_CHUNK_SIZE_CHARS, TEXT_CHUNK_OVERLAP_CHARS)
-    
-    if not chunks:
-        print(f"No text chunks generated after consolidation for {repo_full_name}.")
-        return False
-    
-    print(f"Generated {len(chunks)} chunks for {repo_full_name}.")
-
-    chunks_with_repo_name = [(chunk, repo_full_name) for chunk in chunks]
-    
-    print(f"Adding {len(chunks_with_repo_name)} chunks from {repo_full_name} to vector store...")
-    success = vector_store.add_documents(chunks_with_repo_name)
-    
-    if success:
-        print(f"Successfully processed and added context for {repo_full_name} to vector store.")
-    else:
-        print(f"Failed to add context for {repo_full_name} to vector store.")
-    return success
-
-
-def generate_cv_summary_for_repo(repo_full_name: str, repo_pushed_at: Optional[str] = None): # Add pushed_at for potential heuristic
-    """
-    Generates a CV summary for a single repository using context from the vector store.
-    """
-    print(f"Attempting to generate CV summary for {repo_full_name}...")
-    query_for_context = f"Provide a detailed summary of the project '{repo_full_name}', including its main purpose, key technical features, and technologies used."
-    
-    context_chunks = vector_store.search_relevant_chunks(
-        query_text=query_for_context,
-        repo_full_name_filter=repo_full_name,
-        k=MAX_CONTEXT_CHUNKS_FOR_GEMINI_CV_GENERATION
-    )
-
-    if not context_chunks:
-        print(f"No relevant context found in vector store for {repo_full_name}. Cannot generate CV entry.")
-        return {"repo": repo_full_name, "cv_entry": None, "error": "No contextual information found.", "pushed_at": repo_pushed_at}
-
-    result = generate_cv_entry_for_project(repo_full_name, context_chunks)
-    
-    if result["error"]:
-        print(f"Error generating CV entry for {repo_full_name}: {result['error']}")
-        return {"repo": repo_full_name, "cv_entry": None, "error": result["error"], "pushed_at": repo_pushed_at}
-    
-    print(f"Successfully generated CV entry for {repo_full_name}.")
-    return {"repo": repo_full_name, "cv_entry": result["text"], "error": None, "pushed_at": repo_pushed_at}
-
-
-def orchestrate_cv_generation_for_repos(token: str, repos_to_process: list[dict], action_type: str):
-    """
-    Orchestrates the CV generation for a list of repositories.
+    Orchestrates the CV generation for a list of repositories, yielding progress updates.
     `repos_to_process` is a list of repo dicts from GitHub API.
     `action_type` is 'manual_select' or 'auto_select'.
+    This is an async generator function.
     """
-    generated_cv_entries = []
-    overall_status = {"processed_repos_for_context": 0, "successful_cvs": 0, "errors": []}
-
-    vector_store.reset_index() 
+    # Reset vector store at the start of a new process
+    # This call is synchronous, but typically fast.
+    await asyncio.to_thread(vector_store.reset_index)
     print("Session vector store reset for new CV generation request.")
 
-    processed_repo_cv_data = [] # To store data before "best N" selection for auto
+    # Yield initial status
+    total_repos = len(repos_to_process)
+    yield {"type": "status", "status": "started", "total": total_repos, "message": f"Starting CV generation for {total_repos} repositories..."}
+    await asyncio.sleep(0.1) 
+
+    processed_results_for_filtering = [] # To store results for final selection (especially for auto)
 
     for i, repo_data in enumerate(repos_to_process):
         repo_full_name = repo_data.get("full_name")
         owner = repo_data.get("owner", {}).get("login")
         repo_name_only = repo_data.get("name")
-        pushed_at = repo_data.get("pushed_at") # For "best N" heuristic
+        pushed_at = repo_data.get("pushed_at") 
 
         if not repo_full_name or not owner or not repo_name_only:
-            # ... (error handling as before) ...
-            print(f"Skipping repo due to missing data: {repo_data.get('name', 'Unknown Repo')}")
             err_msg = f"Skipped repo '{repo_data.get('name', 'Unknown Repo')}': Missing identifying information."
-            overall_status["errors"].append(err_msg)
-            processed_repo_cv_data.append({"repo": repo_data.get('name', 'Unknown Repo'), "cv_entry": None, "error": err_msg, "pushed_at": pushed_at})
+            print(err_msg)
+            yield {"type": "status", "status": "error", "repo": repo_data.get('name', 'Unknown Repo'), "message": err_msg}
+            processed_results_for_filtering.append({"repo": repo_data.get('name', 'Unknown Repo'), "cv_entry": None, "error": err_msg, "pushed_at": pushed_at})
+            await asyncio.sleep(0.1)
             continue
         
-        print(f"\n--- Processing repository {i+1}/{len(repos_to_process)}: {repo_full_name} for CV ---")
-        
-        processed_ok = process_repo_for_cv_context(token, owner, repo_name_only)
-        
-        if not processed_ok:
-            # ... (error handling as before) ...
-            error_msg = f"Failed to process and embed context for {repo_full_name}."
-            print(error_msg)
-            processed_repo_cv_data.append({"repo": repo_full_name, "cv_entry": None, "error": error_msg, "pushed_at": pushed_at})
-            overall_status["errors"].append(error_msg)
-            time.sleep(0.5) 
-            continue
-        
-        overall_status["processed_repos_for_context"] += 1
-        
-        cv_result = generate_cv_summary_for_repo(repo_full_name, pushed_at)
-        processed_repo_cv_data.append(cv_result) # Store all processed results
-        
-        # Don't count successful_cvs yet if auto_select, will do after filtering
-        if action_type == 'manual_select':
-            if cv_result.get("cv_entry"):
-                overall_status["successful_cvs"] += 1
-            elif cv_result.get("error"):
-                overall_status["errors"].append(f"CV Generation Error for {repo_full_name}: {cv_result['error']}")
+        repo_display_name = f"{owner}/{repo_name_only}"
+        step_prefix = f"[{i+1}/{total_repos}] {repo_display_name}:"
 
-    # If auto_select, filter down to the "best N" (e.g., top N by pushed_at among those with successful CVs)
+        print(f"\n--- Processing repository {i+1}/{total_repos}: {repo_display_name} for CV ---")
+        yield {"type": "status", "status": "processing_context", "repo": repo_display_name, "message": f"{step_prefix} Fetching and consolidating repository text..."}
+        await asyncio.sleep(0.1)
+
+        # get_consolidated_repo_text_for_context is synchronous
+        repo_text_content = await asyncio.to_thread(
+            get_consolidated_repo_text_for_context, token, owner, repo_name_only
+        )
+        
+        if not repo_text_content:
+            err_msg = f"{step_prefix} Failed to retrieve or consolidate text content for context."
+            print(err_msg)
+            yield {"type": "status", "status": "error", "repo": repo_display_name, "message": err_msg}
+            processed_results_for_filtering.append({"repo": repo_display_name, "cv_entry": None, "error": err_msg, "pushed_at": pushed_at})
+            await asyncio.sleep(0.1)
+            continue
+        
+        yield {"type": "status", "status": "processing_context", "repo": repo_display_name, "message": f"{step_prefix} Chunking text and adding to vector store..."}
+        # Chunk the text
+        text_chunks = simple_chunk_text(
+            repo_text_content,
+            TEXT_CHUNK_SIZE_CHARS,
+            TEXT_CHUNK_OVERLAP_CHARS
+        )
+
+        if not text_chunks:
+            err_msg = f"{step_prefix} No text chunks generated from repository content. Cannot create embeddings."
+            print(err_msg)
+            yield {"type": "status", "status": "error", "repo": repo_display_name, "message": err_msg}
+            processed_results_for_filtering.append({"repo": repo_display_name, "cv_entry": None, "error": err_msg, "pushed_at": pushed_at})
+            await asyncio.sleep(0.1)
+            continue
+        
+        # Add chunks to vector store (this is also synchronous internally)
+        docs_to_add_to_store = [(chunk, repo_display_name) for chunk in text_chunks]
+        added_to_vs_ok = await asyncio.to_thread(vector_store.add_documents, docs_to_add_to_store)
+
+        if not added_to_vs_ok:
+            err_msg = f"{step_prefix} Failed to add document chunks to vector store."
+            print(err_msg)
+            yield {"type": "status", "status": "error", "repo": repo_display_name, "message": err_msg}
+            processed_results_for_filtering.append({"repo": repo_display_name, "cv_entry": None, "error": err_msg, "pushed_at": pushed_at})
+            await asyncio.sleep(0.1)
+            continue
+        
+        yield {"type": "status", "status": "context_processed", "repo": repo_display_name, "message": f"{step_prefix} Context processed & embedded."}
+        await asyncio.sleep(0.1)
+
+        yield {"type": "status", "status": "generating_cv", "repo": repo_display_name, "message": f"{step_prefix} Retrieving relevant context and generating CV entry with AI..."}
+        
+        # Search relevant chunks (synchronous)
+        # Using repo_display_name as query might be too broad. A more specific query could be better.
+        # For now, this uses the repo name to find its own chunks.
+        query_for_chunks = f"Summary of project {repo_display_name}"
+        relevant_chunks = await asyncio.to_thread(
+            vector_store.search_relevant_chunks,
+            query_for_chunks,
+            repo_display_name,  # Filter by this repo
+            MAX_CONTEXT_CHUNKS_FOR_GEMINI_CV_GENERATION
+        )
+
+        if not relevant_chunks:
+             yield {"type": "status", "status": "warning", "repo": repo_display_name, "message": f"{step_prefix} No specific context chunks found in vector store for CV generation. AI will generate based on project name only."}
+        
+        # generate_cv_entry_for_project is synchronous (Gemini SDK call, time.sleep)
+        ai_cv_data = await asyncio.to_thread(
+            generate_cv_entry_for_project, repo_display_name, relevant_chunks
+        )
+        
+        # Construct the full result dictionary
+        cv_result_dict = {
+            "repo": repo_display_name,
+            "pushed_at": pushed_at,
+            "cv_entry": ai_cv_data.get("cv_entry"),
+            "error": ai_cv_data.get("error")
+        }
+        processed_results_for_filtering.append(cv_result_dict)
+        
+        if cv_result_dict.get("cv_entry"):
+            print(f"Successfully generated CV entry for {repo_display_name}.")
+            yield {"type": "status", "status": "cv_generated", "repo": repo_display_name, "message": f"{step_prefix} CV entry generated successfully."}
+        elif cv_result_dict.get("error"):
+            print(f"Error generating CV entry for {repo_display_name}: {cv_result_dict['error']}")
+            yield {"type": "status", "status": "error", "repo": repo_display_name, "message": f"{step_prefix} CV generation failed: {cv_result_dict['error']}"}
+        
+        await asyncio.sleep(0.1) # Small delay between repos
+
+    # --- Final Processing/Filtering (for auto_select) ---
+    final_cv_entries_for_display = []
+
     if action_type == 'auto_select':
-        successful_entries = [entry for entry in processed_repo_cv_data if entry.get("cv_entry") and entry.get("pushed_at")]
-        # Sort by pushed_at date (descending - most recent first)
-        successful_entries.sort(key=lambda x: x["pushed_at"], reverse=True)
+        successful_entries = [
+            entry for entry in processed_results_for_filtering 
+            if entry.get("cv_entry") and entry.get("pushed_at")
+        ]
+        # Sort by pushed_at, ensuring a default for entries that might miss it (though unlikely now)
+        successful_entries.sort(key=lambda x: x.get("pushed_at", "1970-01-01T00:00:00Z"), reverse=True)
         
-        generated_cv_entries = successful_entries[:AUTO_SELECT_FINAL_OUTPUT_COUNT]
-        overall_status["successful_cvs"] = len(generated_cv_entries)
+        top_n_successful = successful_entries[:AUTO_SELECT_FINAL_OUTPUT_COUNT]
+        
+        # Get original list of repo full_names that were intended for processing in this batch
+        # This ensures we report on all attempted, not just those with entries in processed_results_for_filtering
+        processed_repo_full_names_list = [rdata.get("full_name") for rdata in repos_to_process]
 
-        # Add errors from any repo that didn't make it to successful_entries
-        for entry in processed_repo_cv_data:
-            if entry.get("error") and entry not in successful_entries : # If it had an error AND wasn't among the ones we might pick
-                 if f"CV Generation Error for {entry['repo']}: {entry['error']}" not in overall_status["errors"] and \
-                    f"Failed to process and embed context for {entry['repo']}." not in overall_status["errors"] and \
-                    f"Skipped repo '{entry['repo']}': Missing identifying information." not in overall_status["errors"]:
-                    overall_status["errors"].append(f"Error for {entry['repo']} (not in top {AUTO_SELECT_FINAL_OUTPUT_COUNT}): {entry['error']}")
+        for repo_full_name_processed in processed_repo_full_names_list:
+            # Find the result for this repo_full_name_processed
+            result_entry = next((entry for entry in processed_results_for_filtering if entry.get("repo") == repo_full_name_processed), None)
 
-
+            if result_entry:
+                is_in_top_n = result_entry in top_n_successful # Check if this specific result object is in the top N list
+                
+                if is_in_top_n:
+                    final_cv_entries_for_display.append(result_entry)
+                elif result_entry.get("error"):
+                    final_cv_entries_for_display.append(result_entry) 
+                elif result_entry.get("cv_entry"): # It had a CV but wasn't in top N
+                     final_cv_entries_for_display.append({
+                        "repo": repo_full_name_processed,
+                        "cv_entry": None, 
+                        "error": f"Successfully processed but not selected among the top {AUTO_SELECT_FINAL_OUTPUT_COUNT} most recent with CVs.",
+                        "pushed_at": result_entry.get("pushed_at")
+                    })
+                # else: # This case (result_entry exists but no cv_entry and no error) should be rare if logic is correct
+                #      final_cv_entries_for_display.append({
+                #         "repo": repo_full_name_processed,
+                #         "cv_entry": None,
+                #         "error": "Processed, but outcome unknown and not in top N.",
+                #         "pushed_at": result_entry.get("pushed_at")
+                #     })
+            else: # Repo was in the input list, but no corresponding result_entry was found (should not happen)
+                final_cv_entries_for_display.append({
+                    "repo": repo_full_name_processed,
+                    "cv_entry": None,
+                    "error": "Processing outcome not recorded for this repository.",
+                    "pushed_at": next((r.get("pushed_at") for r in repos_to_process if r.get("full_name") == repo_full_name_processed), None)
+                })
     else: # manual_select
-        generated_cv_entries = processed_repo_cv_data
+        final_cv_entries_for_display = processed_results_for_filtering
 
+    yield {"type": "complete", "final_results": final_cv_entries_for_display, "message": "Processing complete. Click 'Back to Repositories' or wait for redirect."}
 
-    print(f"\n--- CV Generation Orchestration Complete ---")
-    print(f"Processed {overall_status['processed_repos_for_context']} repositories for context.")
-    print(f"Final CV entries count: {overall_status['successful_cvs']}.")
-    if overall_status["errors"]:
-        print(f"Encountered {len(overall_status['errors'])} errors/issues during the process.")
-            
-    return generated_cv_entries

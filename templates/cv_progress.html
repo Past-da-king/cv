@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Processing CVs - {{ app_title }}{% endblock %}
+
+{% block head_extra %}
+    <script>
+        // Pass process_id and the URL for the final summary page to JavaScript
+        const processId = "{{ process_id }}";
+        // Use the final_summary_url directly as passed from the Python backend
+        const finalSummaryUrl = "{{ final_summary_url }}"; 
+    </script>
+    <script src="{{ url_for('static', path='/js/cv_progress.js') }}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Generating CV Summaries...</h1>
+        <a href="{{ url_for('list_repositories_page') }}" class="inline-flex items-center rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors">
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+            Back to Repositories
+        </a>
+    </div>
+
+    <div class="p-6 sm:p-8 bg-white rounded-xl shadow-xl border border-slate-200 min-h-[300px] overflow-hidden"> {# Added min-height for layout #}
+        <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b border-slate-200 pb-3">Processing Timeline</h2>
+        
+        <div id="progress-log" class="space-y-3 text-sm text-slate-600 max-h-[500px] overflow-y-auto custom-scrollbar pr-2"> {# Added max-height and scroll #}
+            <!-- Progress updates will be appended here by JavaScript -->
+            <div class="flex items-center space-x-3 text-primary-DEFAULT">
+                 <svg class="animate-spin h-5 w-5 text-primary-DEFAULT flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l2.001-2.647z"></path>
+                </svg>
+                <span>Connecting to processing stream...</span>
+            </div>
+        </div>
+
+        {# Removed final-results-placeholder from here, as the page redirects #}
+    </div>
+</div>
+{% endblock %}

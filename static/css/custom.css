@@ -20,16 +20,16 @@ body {
     background: #64748b; /* slate-500 */
 }
 
-/* Styling for prose in CV entries if needed beyond plugin */
-.cv-content-body ul,
+/* Styling for prose in CV entries (adjust typography plugin defaults if needed) */
+/* .cv-content-body ul,
 .cv-content-body ol {
-    padding-left: 1.25rem; /* Adjust as needed */
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 .cv-content-body li {
-    margin-bottom: 0.25rem;
-}
+    margin-bottom: 0.5rem;
+} */
 
 /* Add a subtle animation for button loading states */
 .spinner {
@@ -41,6 +41,7 @@ body {
     border-radius: 50%;
     animation: spin 0.75s linear infinite;
     margin-right: 0.5em; /* Adjust as needed */
+    vertical-align: -0.125em; /* Align with text */
 }
 
 @keyframes spin {
@@ -48,3 +49,16 @@ body {
         transform: rotate(360deg);
     }
 }
+
+/* Custom bullet point style for the CV summary, if not using prose or need specific look */
+/* .list-bullet {
+    display: inline-block;
+    width: 0.75em;
+    margin-left: -0.75em;
+    margin-right: 0.25em;
+    color: #64748b; #slate-500
+}
+.list-item-content {
+    display: inline-block;
+    vertical-align: top;
+} */
